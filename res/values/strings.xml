@@ -9,5 +9,10 @@
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
     <string name="buttonDescription">On/Off Button</string>
+    <string name="text_switch_flash_display">Use Flash or Display?</string>
+    <string name="text_flash">Flash</string>
+    <string name="text_display">Display</string>
+    <string name="text_has_no_flash">Your device has no camera flash</string>
+    <string name="text_has_flash">Your device has a camera flash</string>
 
 </resources>

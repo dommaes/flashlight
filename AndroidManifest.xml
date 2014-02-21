@@ -5,10 +5,13 @@
     android:versionName="1.0" >
 
     <uses-sdk
-        android:minSdkVersion="7"
-        android:targetSdkVersion="17" />
+        android:minSdkVersion="8"
+        android:targetSdkVersion="19" />
 
-    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission
+        android:name="android.permission.CAMERA" />
+    <uses-permission
+        android:name="android.permission.WRITE_SETTINGS" />
 
     <application
         android:allowBackup="true"
@@ -24,6 +27,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="de.dommaes.flashlight.SettingsActivity"
+            android:label="@string/menu_settings">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="de.dommaes.flashlight.MainActivity" />
+        </activity>
+
+        
     </application>
 
 </manifest>

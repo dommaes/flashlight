@@ -1,9 +1,12 @@
 package de.dommaes.flashlight;
 
+import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageManager;
@@ -11,13 +14,16 @@ import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 
 //Flashlight v1.0
 public class MainActivity extends Activity {
 	// variable declaration
+	private boolean isFirstStart = true;
 	private boolean hasFlash = false;
+	private boolean useFlash = true;
 	private Camera camera = null;
 	private boolean isFlashlightOn = false;
 	private boolean isDisplayFlashlightOn = false;
@@ -25,44 +31,65 @@ public class MainActivity extends Activity {
 	private int savedScreenBrightness = 0;
 	private int savedScreenBrightnessMode = 0;
 	private ImageButton imageButton = null;
+	
+	//constant declaration
 	private static final int MAX_SCREEN_BRIGHTNESS = 255;
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		SharedPreferences preferences = getPreferences(MODE_PRIVATE);
-		if(preferences.contains("isFirstStart") == false) {
-			Editor preferencesEditor = preferences.edit();
-			preferencesEditor.putBoolean("isFirstStart", false);
-			hasFlash = getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
-			preferencesEditor.putBoolean("hasFlash", hasFlash);
-			preferencesEditor.commit();
-			preferencesEditor = null;
-		} else {
-			hasFlash = preferences.getBoolean("hasFlash", false);
+		PreferenceManager.setDefaultValues(this, "preferences", MODE_PRIVATE, R.xml.preferences, false);
+		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
+		isFirstStart = prefs.getBoolean("isFirstStart", true);
+		if(isFirstStart) {
+			Editor prefsEditor = prefs.edit();
+			prefsEditor.putBoolean("isFirstStart", false);
+			prefsEditor.putBoolean("hasFlash", getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH));
+			prefsEditor.commit();
+			prefsEditor = null;
 		}
-		preferences = null;
+		hasFlash = prefs.getBoolean("hasFlash", false);
+		prefs = null;
 		setContentView(R.layout.activity_main);
 		mainView = findViewById(R.id.main);
 		imageButton = (ImageButton) findViewById(R.id.toggle);
 	}
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
+		useFlash = prefs.getBoolean("useFlash", false);
+		prefs = null;
+	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.activity_main, menu);
 		return true;
 	}
 	
-	public void toggleTorchLight(View view) {
-		if(hasFlash) {
-			toggleFlashlight();
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int itemId = item.getItemId();
+		if(itemId == R.id.menu_settings) {
+			Intent settingsIntent = new Intent(this, SettingsActivity.class);
+			startActivity(settingsIntent);
+			return true;
 		} else {
-			toggleDisplayFlashlight();
+		return super.onOptionsItemSelected(item);
 		}
 	}
 	
-	private void toggleFlashlight() {
+	public void toggleTorchLight(View view) {
+		if(useFlash) {
+			toggleFlash();
+		} else {
+			toggleDisplay();
+		}
+	}
+	
+	private void toggleFlash() {
 		if(!isFlashlightOn) {
 			imageButton.setImageResource(R.drawable.button_on);
 			camera = Camera.open();
@@ -81,14 +108,16 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-	private void toggleDisplayFlashlight() {
+	private void toggleDisplay() {
 		if(!isDisplayFlashlightOn) {
+			imageButton.setImageResource(R.drawable.button_on);
 			saveScreenBrightnessSettings();
+			mainView.setBackgroundColor(Color.argb(255, 255, 255, 255));
 			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
 			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, MAX_SCREEN_BRIGHTNESS);
-			mainView.setBackgroundColor(Color.argb(255, 255, 255, 255));
 			isDisplayFlashlightOn = true;
 		} else {
+			imageButton.setImageResource(R.drawable.button_off);
 			mainView.setBackgroundColor(Color.argb(255, 0, 0, 0));
 			restoreScreenBrightnessSettings();
 			isDisplayFlashlightOn = false;
@@ -99,13 +128,13 @@ public class MainActivity extends Activity {
 		try {
 			savedScreenBrightnessMode = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE);
 		} catch(SettingNotFoundException e) {
-			
+			System.out.println("SettingNotFoundException");
 		}
 		if(savedScreenBrightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) {
 			try {
 				savedScreenBrightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS);
 			} catch(SettingNotFoundException e) {
-				
+				System.out.println("SettingNotFoundException");
 			}
 		}
 	}
