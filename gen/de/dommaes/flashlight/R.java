@@ -41,7 +41,7 @@ public final class R {
         public static final int text_flash=0x7f050007;
         public static final int text_has_flash=0x7f05000a;
         public static final int text_has_no_flash=0x7f050009;
-        public static final int text_switch_flash_display=0x7f050006;
+        public static final int text_use_flash=0x7f050006;
         public static final int title_activity_toggle_flashlight=0x7f050004;
     }
     public static final class style {

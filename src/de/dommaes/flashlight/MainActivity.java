@@ -1,6 +1,5 @@
 package de.dommaes.flashlight;
 
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -18,7 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 
-//Flashlight v1.0
+//Flashlight v1.1
 public class MainActivity extends Activity {
 	// variable declaration
 	private boolean isFirstStart = true;
@@ -44,7 +43,9 @@ public class MainActivity extends Activity {
 		if(isFirstStart) {
 			Editor prefsEditor = prefs.edit();
 			prefsEditor.putBoolean("isFirstStart", false);
-			prefsEditor.putBoolean("hasFlash", getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH));
+			hasFlash = getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+			prefsEditor.putBoolean("hasFlash", hasFlash);
+			prefsEditor.putBoolean("useFlash", hasFlash);
 			prefsEditor.commit();
 			prefsEditor = null;
 		}

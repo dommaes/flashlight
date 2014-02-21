@@ -4,11 +4,9 @@
         android:title="@string/text_has_no_flash"
         android:key="hasFlash"
         android:defaultValue="false" />
-    <SwitchPreference
-        android:switchTextOff="@string/text_display"
+    <CheckBoxPreference
         android:defaultValue="true"
-        android:title="@string/text_switch_flash_display"
-        android:key="useFlash"
-        android:switchTextOn="@string/text_flash" />
+        android:title="@string/text_use_flash"
+        android:key="useFlash" />
     
 </PreferenceScreen>
