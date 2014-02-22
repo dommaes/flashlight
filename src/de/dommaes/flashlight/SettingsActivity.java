@@ -2,9 +2,11 @@ package de.dommaes.flashlight;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
@@ -37,6 +39,11 @@ public class SettingsActivity extends PreferenceActivity {
 		super.onPostCreate(savedInstanceState);
 		getPreferenceManager().setSharedPreferencesName("preferences");
 		addPreferencesFromResource(R.xml.preferences);
+		CheckBoxPreference chkUseFlash = (CheckBoxPreference) findPreference("useFlash");
+		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
+		chkUseFlash.setEnabled(prefs.getBoolean("hasFlash", true));
+		chkUseFlash.setSelectable(prefs.getBoolean("hasFlash", true));
+		prefs = null;
 //		setupSimplePreferencesScreen();
 	}
 

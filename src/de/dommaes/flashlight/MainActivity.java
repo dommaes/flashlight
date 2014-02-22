@@ -23,11 +23,9 @@ public class MainActivity extends Activity {
 	private boolean hasFlash = false;
 	private boolean useFlash = true;
 	private Camera camera = null;
-	private boolean isFlashlightOn = false;
-	private boolean isDisplayFlashlightOn = false;
+	private boolean isFlashOn = false;
+	private boolean isDisplayOn = false;
 	private static View mainView = null;
-	private int savedScreenBrightness = 0;
-	private int savedScreenBrightnessMode = 0;
 	private ImageButton imageButton = null;
 	
 	//constant declaration
@@ -88,59 +86,75 @@ public class MainActivity extends Activity {
 	}
 	
 	private void toggleFlash() {
-		if(!isFlashlightOn) {
+		if(!isFlashOn) {
 			imageButton.setImageResource(R.drawable.button_on);
 			camera = Camera.open();
 			Parameters parameters = camera.getParameters();
 			parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
 			camera.setParameters(parameters);
 			camera.startPreview();
-			isFlashlightOn = true;
+			isFlashOn = true;
 			parameters = null;
 		} else {
 			imageButton.setImageResource(R.drawable.button_off);
 			camera.stopPreview();
 			camera.release();
 			camera = null;
-			isFlashlightOn = false;
+			isFlashOn = false;
 		}
 	}
 	
 	private void toggleDisplay() {
-		if(!isDisplayFlashlightOn) {
+		if(!isDisplayOn) {
 			imageButton.setImageResource(R.drawable.button_on);
-			saveScreenBrightnessSettings();
+			saveBrightnessSettings();
 			mainView.setBackgroundColor(Color.argb(255, 255, 255, 255));
 			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
 			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, MAX_SCREEN_BRIGHTNESS);
-			isDisplayFlashlightOn = true;
+			isDisplayOn = true;
 		} else {
 			imageButton.setImageResource(R.drawable.button_off);
 			mainView.setBackgroundColor(Color.argb(255, 0, 0, 0));
-			restoreScreenBrightnessSettings();
-			isDisplayFlashlightOn = false;
+			restoreBrightnessSettings();
+			isDisplayOn = false;
 		}
 	}
 	
-	public void saveScreenBrightnessSettings() {
+	public void saveBrightnessSettings() {
 		try {
-			savedScreenBrightnessMode = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE);
+			//savedScreenBrightnessMode = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE);
+			Editor prefsEditor = getSharedPreferences("preferences", MODE_PRIVATE).edit();
+			prefsEditor.putInt("brightnessMode", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE));
+			prefsEditor.commit();
+			prefsEditor = null;
 		} catch(SettingNotFoundException e) {
 			System.out.println("SettingNotFoundException");
 		}
-		if(savedScreenBrightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) {
+		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
+		if(prefs.getInt("brightnessMode", Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) {
 			try {
-				savedScreenBrightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS);
+				//savedScreenBrightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS);
+				Editor prefsEditor = getSharedPreferences("preferences", MODE_PRIVATE).edit();
+				prefsEditor.putInt("brightness", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS));
+				prefsEditor.commit();
+				prefsEditor = null;
 			} catch(SettingNotFoundException e) {
 				System.out.println("SettingNotFoundException");
 			}
 		}
+		prefs = null;
 	}
 	
-	public void restoreScreenBrightnessSettings() {
-		Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, savedScreenBrightnessMode);
-		if(savedScreenBrightnessMode == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) {
-			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, savedScreenBrightness);
+	public void restoreBrightnessSettings() {
+		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
+		Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, prefs.getInt("brightnessMode", Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL));
+		if(prefs.getInt("brightnessMode", Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) {
+			try {
+				Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, prefs.getInt("brightness", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS)));
+			} catch (SettingNotFoundException e) {
+				System.out.println("SettingsNotFoundException");
+			}
 		}
+		prefs = null;
 	}
 }

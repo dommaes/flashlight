@@ -34,8 +34,5 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="de.dommaes.flashlight.MainActivity" />
         </activity>
-
-        
     </application>
-
 </manifest>
