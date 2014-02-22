@@ -20,7 +20,6 @@ import android.widget.ImageButton;
 //Flashlight v1.1
 public class MainActivity extends Activity {
 	// variable declaration
-	private boolean isFirstStart = true;
 	private boolean hasFlash = false;
 	private boolean useFlash = true;
 	private Camera camera = null;
@@ -37,10 +36,9 @@ public class MainActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		PreferenceManager.setDefaultValues(this, "preferences", MODE_PRIVATE, R.xml.preferences, false);
 		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
-		isFirstStart = prefs.getBoolean("isFirstStart", true);
-		if(isFirstStart) {
+		if(prefs.getBoolean("isFirstStart", true)) {
+			PreferenceManager.setDefaultValues(this, "preferences", MODE_PRIVATE, R.xml.preferences, false);
 			Editor prefsEditor = prefs.edit();
 			prefsEditor.putBoolean("isFirstStart", false);
 			hasFlash = getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
@@ -74,8 +72,7 @@ public class MainActivity extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int itemId = item.getItemId();
 		if(itemId == R.id.menu_settings) {
-			Intent settingsIntent = new Intent(this, SettingsActivity.class);
-			startActivity(settingsIntent);
+			startActivity(new Intent(this, SettingsActivity.class));
 			return true;
 		} else {
 		return super.onOptionsItemSelected(item);

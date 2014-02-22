@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
-    <Preference
-        android:title="@string/text_has_no_flash"
-        android:key="hasFlash"
-        android:defaultValue="false" />
     <CheckBoxPreference
-        android:defaultValue="true"
+        android:key="useFlash"
         android:title="@string/text_use_flash"
-        android:key="useFlash" />
-    
+        android:defaultValue="true"/>
 </PreferenceScreen>
