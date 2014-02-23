@@ -21,7 +21,7 @@ import android.widget.ImageButton;
 public class MainActivity extends Activity {
 	// variable declaration
 	private boolean hasFlash = false;
-	private boolean useFlash = true;
+	private boolean useFlash = false;
 	private Camera camera = null;
 	private boolean isFlashOn = false;
 	private boolean isDisplayOn = false;
@@ -35,18 +35,17 @@ public class MainActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
-		if(prefs.getBoolean("isFirstStart", true)) {
+		boolean isFirstStart = prefs.getBoolean("isFirstStart", true);
+		if(isFirstStart) {
 			PreferenceManager.setDefaultValues(this, "preferences", MODE_PRIVATE, R.xml.preferences, false);
 			Editor prefsEditor = prefs.edit();
 			prefsEditor.putBoolean("isFirstStart", false);
-			hasFlash = getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+			hasFlash = hasFlash();
 			prefsEditor.putBoolean("hasFlash", hasFlash);
 			prefsEditor.putBoolean("useFlash", hasFlash);
 			prefsEditor.commit();
-			prefsEditor = null;
 		}
 		hasFlash = prefs.getBoolean("hasFlash", false);
-		prefs = null;
 		setContentView(R.layout.activity_main);
 		mainView = findViewById(R.id.main);
 		imageButton = (ImageButton) findViewById(R.id.toggle);
@@ -57,7 +56,6 @@ public class MainActivity extends Activity {
 		super.onResume();
 		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
 		useFlash = prefs.getBoolean("useFlash", false);
-		prefs = null;
 	}
 
 	@Override
@@ -77,6 +75,28 @@ public class MainActivity extends Activity {
 		}
 	}
 	
+	private boolean hasFlash() {
+		boolean hasFlash;
+		if(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
+			hasFlash = true;
+			Camera camera = Camera.open();
+			Parameters cameraParameters = camera.getParameters();
+			if(cameraParameters.getSupportedFlashModes() != null) {
+				hasFlash = true;
+				if (cameraParameters.getSupportedFlashModes().get(0).equals("off")) {
+					hasFlash = false;
+				} else {
+					hasFlash = true;
+				}
+			} else {
+				hasFlash = false;
+			}
+		} else {
+			hasFlash = false;
+		}
+		return hasFlash;
+	}
+	
 	public void toggleTorchLight(View view) {
 		if(useFlash) {
 			toggleFlash();
@@ -94,12 +114,10 @@ public class MainActivity extends Activity {
 			camera.setParameters(parameters);
 			camera.startPreview();
 			isFlashOn = true;
-			parameters = null;
 		} else {
 			imageButton.setImageResource(R.drawable.button_off);
 			camera.stopPreview();
 			camera.release();
-			camera = null;
 			isFlashOn = false;
 		}
 	}
@@ -122,27 +140,22 @@ public class MainActivity extends Activity {
 	
 	public void saveBrightnessSettings() {
 		try {
-			//savedScreenBrightnessMode = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE);
 			Editor prefsEditor = getSharedPreferences("preferences", MODE_PRIVATE).edit();
 			prefsEditor.putInt("brightnessMode", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE));
 			prefsEditor.commit();
-			prefsEditor = null;
 		} catch(SettingNotFoundException e) {
 			System.out.println("SettingNotFoundException");
 		}
 		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
 		if(prefs.getInt("brightnessMode", Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) {
 			try {
-				//savedScreenBrightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS);
 				Editor prefsEditor = getSharedPreferences("preferences", MODE_PRIVATE).edit();
 				prefsEditor.putInt("brightness", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS));
 				prefsEditor.commit();
-				prefsEditor = null;
 			} catch(SettingNotFoundException e) {
 				System.out.println("SettingNotFoundException");
 			}
 		}
-		prefs = null;
 	}
 	
 	public void restoreBrightnessSettings() {
@@ -155,6 +168,5 @@ public class MainActivity extends Activity {
 				System.out.println("SettingsNotFoundException");
 			}
 		}
-		prefs = null;
 	}
 }

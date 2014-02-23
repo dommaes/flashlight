@@ -43,7 +43,6 @@ public class SettingsActivity extends PreferenceActivity {
 		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
 		chkUseFlash.setEnabled(prefs.getBoolean("hasFlash", true));
 		chkUseFlash.setSelectable(prefs.getBoolean("hasFlash", true));
-		prefs = null;
 //		setupSimplePreferencesScreen();
 	}
 
