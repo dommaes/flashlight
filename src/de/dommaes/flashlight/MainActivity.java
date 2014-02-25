@@ -1,5 +1,7 @@
 package de.dommaes.flashlight;
 
+import java.util.List;
+
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
@@ -36,6 +38,30 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 		mainView = findViewById(R.id.main);
 		imageButton = (ImageButton) findViewById(R.id.toggle);
+	}
+	
+	@Override
+	protected void onResume() {
+		super.onResume();
+		if (camera != null) {
+			camera = Camera.open();
+		}
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		if (camera != null) {
+			camera.release();
+		}
+	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		if (camera != null) {
+			camera.release();
+		}
 	}
 
 	@Override
@@ -75,27 +101,27 @@ public class MainActivity extends Activity {
 	private boolean hasFlash() {
 		boolean hasFlash;
 		if(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
-			Camera hasFlashCamera = Camera.open();
-			Parameters cameraParameters = hasFlashCamera.getParameters();
-			hasFlashCamera.release();
-			hasFlashCamera = null;
-			if(cameraParameters.getSupportedFlashModes() != null) {
-				if (!cameraParameters.getSupportedFlashModes().get(0).equals("off")) {
+			camera = Camera.open();
+			Parameters cameraParameters = camera.getParameters();
+			camera.release();
+			camera = null;
+			List<String> flashModes = cameraParameters.getSupportedFlashModes();
+			if(flashModes != null) {
+				if(flashModes.get(0).equals("off") && (flashModes.size() > 1)) {
 					hasFlash = true;
 				} else {
 					hasFlash = false;
 				}
-				hasFlash = true;
 			} else {
 				hasFlash = false;
 			}
-			hasFlash = true;
 		} else {
 			hasFlash = false;
 		}
 		return hasFlash;
 	}
 	
+
 	private boolean useFlash() {
 		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
 		return prefs.getBoolean("useFlash", false);
@@ -104,7 +130,6 @@ public class MainActivity extends Activity {
 	public void toggleTorchLight(View view) {
 		if(useFlash()) {
 			toggleFlash();
-			System.out.println("Flash toggled");
 		} else {
 			toggleDisplay();
 		}
@@ -124,16 +149,25 @@ public class MainActivity extends Activity {
 				camera.setParameters(parameters);
 				camera.startPreview();
 				isFlashOn = true;
-			} catch (Exception e) {
+			} catch(Exception e) {
 				camera.release();
 				camera = null;
 				isFlashOn = false;
 			}
 		} else {
 			imageButton.setImageResource(R.drawable.button_off);
-			camera.stopPreview();
-			camera.release();
-			camera = null;
+			try {
+				Parameters cameraParameters = camera.getParameters();
+				cameraParameters.setFlashMode(Parameters.FLASH_MODE_OFF);
+				camera.setParameters(cameraParameters);
+				camera.stopPreview();
+				camera.release();
+				camera = null;
+			} catch(Exception e) {
+				camera.release();
+				camera = null;
+				isFlashOn = false;
+			}
 			isFlashOn = false;
 		}
 	}
@@ -183,6 +217,15 @@ public class MainActivity extends Activity {
 			} catch (SettingNotFoundException e) {
 				System.out.println("SettingsNotFoundException");
 			}
+		}
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		if(camera != null) {
+			camera.release();
+			camera = null;
 		}
 	}
 }
