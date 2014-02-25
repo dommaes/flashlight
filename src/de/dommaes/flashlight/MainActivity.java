@@ -20,8 +20,6 @@ import android.widget.ImageButton;
 //Flashlight v1.1
 public class MainActivity extends Activity {
 	// variable declaration
-	private boolean hasFlash = false;
-	private boolean useFlash = false;
 	private Camera camera = null;
 	private boolean isFlashOn = false;
 	private boolean isDisplayOn = false;
@@ -34,40 +32,22 @@ public class MainActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
-		boolean isFirstStart = prefs.getBoolean("isFirstStart", true);
-		if(isFirstStart) {
-			PreferenceManager.setDefaultValues(this, "preferences", MODE_PRIVATE, R.xml.preferences, false);
-			Editor prefsEditor = prefs.edit();
-			prefsEditor.putBoolean("isFirstStart", false);
-			hasFlash = hasFlash();
-			prefsEditor.putBoolean("hasFlash", hasFlash);
-			prefsEditor.putBoolean("useFlash", hasFlash);
-			prefsEditor.commit();
-		}
-		hasFlash = prefs.getBoolean("hasFlash", false);
+		init(hasFlash());
 		setContentView(R.layout.activity_main);
 		mainView = findViewById(R.id.main);
 		imageButton = (ImageButton) findViewById(R.id.toggle);
 	}
-	
-	@Override
-	public void onResume() {
-		super.onResume();
-		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
-		useFlash = prefs.getBoolean("useFlash", false);
-	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.activity_main, menu);
+		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int itemId = item.getItemId();
-		if(itemId == R.id.menu_settings) {
+		if(itemId == R.id.action_settings) {
 			startActivity(new Intent(this, SettingsActivity.class));
 			return true;
 		} else {
@@ -75,31 +55,56 @@ public class MainActivity extends Activity {
 		}
 	}
 	
+	private boolean isFirstStart() {
+		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
+		return prefs.getBoolean("isFirstStart", true);
+	}
+	
+	private void init(boolean hasFlash) {
+		if(isFirstStart()) {
+			PreferenceManager.setDefaultValues(this, "preferences", MODE_PRIVATE, R.xml.preferences, false);
+			SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
+			Editor prefsEditor = prefs.edit();
+			prefsEditor.putBoolean("isFirstStart", false);
+			prefsEditor.putBoolean("hasFlash", hasFlash);
+			prefsEditor.putBoolean("useFlash", hasFlash);
+			prefsEditor.commit();
+		}
+	}
+	
 	private boolean hasFlash() {
 		boolean hasFlash;
 		if(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
-			hasFlash = true;
-			Camera camera = Camera.open();
-			Parameters cameraParameters = camera.getParameters();
+			Camera hasFlashCamera = Camera.open();
+			Parameters cameraParameters = hasFlashCamera.getParameters();
+			hasFlashCamera.release();
+			hasFlashCamera = null;
 			if(cameraParameters.getSupportedFlashModes() != null) {
-				hasFlash = true;
-				if (cameraParameters.getSupportedFlashModes().get(0).equals("off")) {
-					hasFlash = false;
-				} else {
+				if (!cameraParameters.getSupportedFlashModes().get(0).equals("off")) {
 					hasFlash = true;
+				} else {
+					hasFlash = false;
 				}
+				hasFlash = true;
 			} else {
 				hasFlash = false;
 			}
+			hasFlash = true;
 		} else {
 			hasFlash = false;
 		}
 		return hasFlash;
 	}
 	
+	private boolean useFlash() {
+		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
+		return prefs.getBoolean("useFlash", false);
+	}
+	
 	public void toggleTorchLight(View view) {
-		if(useFlash) {
+		if(useFlash()) {
 			toggleFlash();
+			System.out.println("Flash toggled");
 		} else {
 			toggleDisplay();
 		}
@@ -108,16 +113,27 @@ public class MainActivity extends Activity {
 	private void toggleFlash() {
 		if(!isFlashOn) {
 			imageButton.setImageResource(R.drawable.button_on);
-			camera = Camera.open();
-			Parameters parameters = camera.getParameters();
-			parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
-			camera.setParameters(parameters);
-			camera.startPreview();
-			isFlashOn = true;
+			try {
+				if (camera != null) {
+			        camera.release();
+			        camera = null;
+				}
+				camera = Camera.open();
+				Parameters parameters = camera.getParameters();
+				parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+				camera.setParameters(parameters);
+				camera.startPreview();
+				isFlashOn = true;
+			} catch (Exception e) {
+				camera.release();
+				camera = null;
+				isFlashOn = false;
+			}
 		} else {
 			imageButton.setImageResource(R.drawable.button_off);
 			camera.stopPreview();
 			camera.release();
+			camera = null;
 			isFlashOn = false;
 		}
 	}

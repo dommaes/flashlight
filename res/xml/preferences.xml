@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
-    <CheckBoxPreference
-        android:key="useFlash"
-        android:title="@string/text_use_flash"
-        android:defaultValue="true"/>
+    <CheckBoxPreference android:defaultValue="true" android:key="useFlash" android:title="@string/text_use_flash"/>
+    
+
 </PreferenceScreen>
