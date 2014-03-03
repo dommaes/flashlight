@@ -20,48 +20,57 @@ import android.view.View;
 import android.widget.ImageButton;
 
 //Flashlight v1.1
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements PreferenceHandler {
 	// variable declaration
 	private Camera camera = null;
 	private boolean isFlashOn = false;
 	private boolean isDisplayOn = false;
-	private static View mainView = null;
-	private ImageButton imageButton = null;
 	
 	//constant declaration
+	private static final String PREF_NAME = "preferences";
+	private static final int PREF_MODE = MODE_PRIVATE;
 	private static final int MAX_SCREEN_BRIGHTNESS = 255;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		init(hasFlash());
 		setContentView(R.layout.activity_main);
-		mainView = findViewById(R.id.main);
-		imageButton = (ImageButton) findViewById(R.id.toggle);
+		if(isFirstStart()) {
+			init(hasFlash());
+		}
 	}
 	
 	@Override
-	protected void onResume() {
-		super.onResume();
+	protected void onRestart() {
+		super.onRestart();
 		if (camera != null) {
 			camera = Camera.open();
-		}
+		}		
 	}
-	
+
 	@Override
 	protected void onPause() {
-		super.onPause();
 		if (camera != null) {
 			camera.release();
 		}
+		super.onPause();
 	}
 	
 	@Override
-	protected void onDestroy() {
-		super.onDestroy();
+	protected void onStop() {
 		if (camera != null) {
 			camera.release();
 		}
+		super.onStop();
+	}
+
+	@Override
+	protected void onDestroy() {
+		if (camera != null) {
+			camera.release();
+			camera = null;
+		}
+		super.onDestroy();
 	}
 
 	@Override
@@ -81,21 +90,47 @@ public class MainActivity extends Activity {
 		}
 	}
 	
+	@Override
+	public SharedPreferences openPreferences() {
+		return getSharedPreferences(PREF_NAME, PREF_MODE);
+		
+	}
+	
+	@Override
+	public boolean getPreference(String key, boolean defaultValue) {
+		return openPreferences().getBoolean(key, defaultValue);
+	}
+	
+	@Override
+	public int getPreference(String key, int defaultValue) {
+		return openPreferences().getInt(key, defaultValue);
+	}
+	
+	@Override
+	public void setPreference(String key, boolean value) {
+		Editor prefsEditor = openPreferences().edit();
+		prefsEditor.putBoolean(key, value);
+		prefsEditor.commit();
+		prefsEditor = null;
+	}
+	
+	@Override
+	public void setPreference(String key, int value) {
+		Editor prefsEditor = openPreferences().edit();
+		prefsEditor.putInt(key, value);
+		prefsEditor.commit();
+		prefsEditor = null;
+	}
+
 	private boolean isFirstStart() {
-		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
-		return prefs.getBoolean("isFirstStart", true);
+		return getPreference("isFirstStart", true);
 	}
 	
 	private void init(boolean hasFlash) {
-		if(isFirstStart()) {
-			PreferenceManager.setDefaultValues(this, "preferences", MODE_PRIVATE, R.xml.preferences, false);
-			SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
-			Editor prefsEditor = prefs.edit();
-			prefsEditor.putBoolean("isFirstStart", false);
-			prefsEditor.putBoolean("hasFlash", hasFlash);
-			prefsEditor.putBoolean("useFlash", hasFlash);
-			prefsEditor.commit();
-		}
+		PreferenceManager.setDefaultValues(this, PREF_NAME, PREF_MODE, R.xml.preferences, false);
+		setPreference("isFirstStart", false);
+		setPreference("hasFlash", hasFlash);
+		setPreference("useFlash", hasFlash);
 	}
 	
 	private boolean hasFlash() {
@@ -123,8 +158,7 @@ public class MainActivity extends Activity {
 	
 
 	private boolean useFlash() {
-		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
-		return prefs.getBoolean("useFlash", false);
+		return getPreference("useFlash", false);
 	}
 	
 	public void toggleTorchLight(View view) {
@@ -135,9 +169,9 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-	private void toggleFlash() {
+	private void toggleFlash() { 
 		if(!isFlashOn) {
-			imageButton.setImageResource(R.drawable.button_on);
+			((ImageButton) findViewById(R.id.toggle)).setImageResource(R.drawable.button_on);
 			try {
 				if (camera != null) {
 			        camera.release();
@@ -155,7 +189,7 @@ public class MainActivity extends Activity {
 				isFlashOn = false;
 			}
 		} else {
-			imageButton.setImageResource(R.drawable.button_off);
+			((ImageButton) findViewById(R.id.toggle)).setImageResource(R.drawable.button_off);
 			try {
 				Parameters cameraParameters = camera.getParameters();
 				cameraParameters.setFlashMode(Parameters.FLASH_MODE_OFF);
@@ -174,15 +208,15 @@ public class MainActivity extends Activity {
 	
 	private void toggleDisplay() {
 		if(!isDisplayOn) {
-			imageButton.setImageResource(R.drawable.button_on);
+			((ImageButton) findViewById(R.id.toggle)).setImageResource(R.drawable.button_on);
 			saveBrightnessSettings();
-			mainView.setBackgroundColor(Color.argb(255, 255, 255, 255));
+			findViewById(R.id.main).setBackgroundColor(Color.argb(255, 255, 255, 255));
 			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
 			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, MAX_SCREEN_BRIGHTNESS);
 			isDisplayOn = true;
 		} else {
-			imageButton.setImageResource(R.drawable.button_off);
-			mainView.setBackgroundColor(Color.argb(255, 0, 0, 0));
+			((ImageButton) findViewById(R.id.toggle)).setImageResource(R.drawable.button_off);
+			findViewById(R.id.main).setBackgroundColor(Color.argb(255, 0, 0, 0));
 			restoreBrightnessSettings();
 			isDisplayOn = false;
 		}
@@ -190,18 +224,13 @@ public class MainActivity extends Activity {
 	
 	public void saveBrightnessSettings() {
 		try {
-			Editor prefsEditor = getSharedPreferences("preferences", MODE_PRIVATE).edit();
-			prefsEditor.putInt("brightnessMode", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE));
-			prefsEditor.commit();
+			setPreference("brightnessMode", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE));
 		} catch(SettingNotFoundException e) {
 			System.out.println("SettingNotFoundException");
 		}
-		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
-		if(prefs.getInt("brightnessMode", Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) {
+		if(getPreference("brightnessMode", Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) {
 			try {
-				Editor prefsEditor = getSharedPreferences("preferences", MODE_PRIVATE).edit();
-				prefsEditor.putInt("brightness", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS));
-				prefsEditor.commit();
+				setPreference("brightness", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS));
 			} catch(SettingNotFoundException e) {
 				System.out.println("SettingNotFoundException");
 			}
@@ -209,23 +238,13 @@ public class MainActivity extends Activity {
 	}
 	
 	public void restoreBrightnessSettings() {
-		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
-		Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, prefs.getInt("brightnessMode", Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL));
-		if(prefs.getInt("brightnessMode", Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) {
+		Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, getPreference("brightnessMode", Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL));
+		if(getPreference("brightnessMode", Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) == Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) {
 			try {
-				Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, prefs.getInt("brightness", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS)));
+				Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, getPreference("brightness", Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS)));
 			} catch (SettingNotFoundException e) {
 				System.out.println("SettingsNotFoundException");
 			}
-		}
-	}
-	
-	@Override
-	protected void finalize() throws Throwable {
-		super.finalize();
-		if(camera != null) {
-			camera.release();
-			camera = null;
 		}
 	}
 }

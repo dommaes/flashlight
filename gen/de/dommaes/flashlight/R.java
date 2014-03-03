@@ -48,7 +48,6 @@ public final class R {
         public static final int button_description=0x7f060004;
         public static final int button_off=0x7f060003;
         public static final int button_on=0x7f060002;
-        public static final int hello_world=0x7f060007;
         public static final int text_use_flash=0x7f060005;
         public static final int title_activity_settings=0x7f060006;
     }

@@ -3,6 +3,7 @@ package de.dommaes.flashlight;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,7 +26,10 @@ import java.util.List;
  * href="http://developer.android.com/guide/topics/ui/settings.html">Settings
  * API Guide</a> for more information on developing a Settings UI.
  */
-public class SettingsActivity extends PreferenceActivity {
+public class SettingsActivity extends PreferenceActivity implements PreferenceHandler {
+	//constant declaration
+	private static final String PREF_NAME = "preferences";
+	private static final int PREF_MODE = MODE_PRIVATE;
 	/**
 	 * Determines whether to always show the simplified settings UI, where
 	 * settings are presented in a single list. When false, settings are shown
@@ -74,12 +78,43 @@ public class SettingsActivity extends PreferenceActivity {
 		getPreferenceManager().setSharedPreferencesName("preferences");
 		setupSimplePreferencesScreen();
 		CheckBoxPreference chkUseFlash = (CheckBoxPreference) findPreference("useFlash");
-		SharedPreferences prefs = getSharedPreferences("preferences", MODE_PRIVATE);
-		chkUseFlash.setEnabled(prefs.getBoolean("hasFlash", true));
-		chkUseFlash.setSelectable(prefs.getBoolean("hasFlash", true));
+		chkUseFlash.setEnabled(getPreference("hasFlash", true));
+		chkUseFlash.setSelectable(getPreference("hasFlash", true));
 //		setupSimplePreferencesScreen();
 	}
 
+	@Override
+	public SharedPreferences openPreferences() {
+		return getSharedPreferences(PREF_NAME, PREF_MODE);
+		
+	}
+	
+	@Override
+	public boolean getPreference(String key, boolean defaultValue) {
+		return openPreferences().getBoolean(key, defaultValue);
+	}
+	
+	@Override
+	public int getPreference(String key, int defaultValue) {
+		return openPreferences().getInt(key, defaultValue);
+	}
+	
+	@Override
+	public void setPreference(String key, boolean value) {
+		Editor prefsEditor = openPreferences().edit();
+		prefsEditor.putBoolean(key, value);
+		prefsEditor.commit();
+		prefsEditor = null;
+	}
+	
+	@Override
+	public void setPreference(String key, int value) {
+		Editor prefsEditor = openPreferences().edit();
+		prefsEditor.putInt(key, value);
+		prefsEditor.commit();
+		prefsEditor = null;
+	}
+	
 	/**
 	 * Shows the simplified settings UI if the device configuration if the
 	 * device configuration dictates that a simplified, single-pane UI should be
